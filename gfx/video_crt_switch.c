@@ -1,6 +1,7 @@
-/* CRT SwitchRes Core
+/* LCD SwitchRes Core
  * Copyright (C) 2018 Alphanu / Ben Templeman.
- *
+ * Copyright (C) 2019 Francesco Zacchi.
+ * 
  * RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
@@ -16,9 +17,11 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+ 
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "video_driver.h"
 #include "video_crt_switch.h"
@@ -63,26 +66,12 @@ static void switch_crt_hz(void)
 {
    if (ra_core_hz == ra_tmp_core_hz)
       return;
-   /* set hz float to an int for windows switching */
-   if (ra_core_hz < 100)
-   {
-      if (ra_core_hz < 53)
-         ra_set_core_hz = 50;
-      if (ra_core_hz >= 53  &&  ra_core_hz < 57)
-         ra_set_core_hz = 55;
-      if (ra_core_hz >= 57)
-         ra_set_core_hz = 60;
-   }
-
-   if (ra_core_hz > 100)
-   {
-      if (ra_core_hz < 106)
-         ra_set_core_hz = 120;
-      if (ra_core_hz >= 106  &&  ra_core_hz < 114)
-         ra_set_core_hz = 110;
-      if (ra_core_hz >= 114)
-         ra_set_core_hz = 120;
-   }
+   /* convert to integer */
+   if (ra_core_hz < 50) ra_set_core_hz = 50;
+   
+   if (ra_core_hz > 63) ra_set_core_hz = 120;
+   
+   if (50 < ra_core_hz < 63) ra_set_core_hz = round(ra_core_hz);
 
    video_monitor_set_refresh_rate(ra_set_core_hz);
 
@@ -290,81 +279,9 @@ static void crt_rpi_switch(int width, int height, float hz)
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);
 
-   /* following code is the mode line generator */
 
-   pwidth = width;
 
-   if (height < 400 && width > 400)
-      pwidth = width / 2;
 
-   roundw = roundf((float)pwidth / (float)height * 100) / 100;
-
-   if (height > width)
-      roundw = roundf((float)height / (float)width * 100) / 100;
-
-   if (roundw > 1.35)
-      roundw = 1.25;
-
-   if (roundw < 1.20)
-      roundw = 1.34;
-   hfp = width * 0.065;
-
-   hsp = width * 0.1433-hfp+(crt_center_adjust*4);
-
-   hbp = width * 0.3-hsp-hfp;
-
-   if (height < 241)
-      vmax = 261;
-   if (height < 241 && hz > 56 && hz < 58)
-      vmax = 280;
-   if (height < 241 && hz < 55)
-      vmax = 313;
-   if (height > 250 && height < 260 && hz > 54)
-      vmax = 296;
-   if (height > 250 && height < 260 && hz > 52 && hz < 54)
-      vmax = 285;
-   if (height > 250 && height < 260 && hz < 52)
-      vmax = 313;
-   if (height > 260 && height < 300)
-      vmax = 318;
-
-   if (height > 400 && hz > 56)
-      vmax = 533;
-   if (height > 520 && hz < 57)
-      vmax = 580;
-
-   if (height > 300 && hz < 56)
-      vmax = 615;
-   if (height > 500 && hz < 56)
-      vmax = 624;
-   if (height > 300)
-      pdefault = pdefault * 2;
-
-   vfp = (height + ((vmax - height) / 2) - pdefault) - height;
-
-   if (height < 300)
-      vsp = vfp + 3; /* needs to be 3 for progressive */
-   if (height > 300)
-      vsp = vfp + 6; /* needs to be 6 for interlaced */
-
-   vsp = 3;
-
-   vbp = (vmax-height)-vsp-vfp;
-
-   hmax = width+hfp+hsp+hbp;
-
-   if (height < 300)
-   {
-      pixel_clock = (hmax * vmax * hz) ;
-      ip_flag     = 0;
-   }
-
-   if (height > 300)
-   {
-      pixel_clock = (hmax * vmax * (hz/2)) /2 ;
-      ip_flag     = 1;
-   }
-   /* above code is the modeline generator */
 
    snprintf(set_hdmi_timing, sizeof(set_hdmi_timing),
          "hdmi_timings %d 1 %d %d %d %d 1 %d %d %d 0 0 0 %f %d %f 1 ",
