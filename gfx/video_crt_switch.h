@@ -1,5 +1,6 @@
 /* CRT SwitchRes Core
  * Copyright (C) 2018 Alphanu / Ben Templeman.
+ * Copyright (C) 2019 Francesco Zacchi.
  *
  * RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
@@ -27,13 +28,11 @@
 
 RETRO_BEGIN_DECLS
 
-void crt_switch_res_core(unsigned width, unsigned height, float hz, unsigned crt_mode, int crt_switch_center_adjust, int monitor_index, bool dynamic);
+void crt_switch_res_core(unsigned width, unsigned height, float hz);
 
 void crt_aspect_ratio_switch(unsigned width, unsigned height);
 
 void crt_video_restore(void);
-
-int crt_compute_dynamic_width(int width);
 
 RETRO_END_DECLS
 
